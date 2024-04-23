@@ -1,0 +1,70 @@
+import time
+from multiprocessing import Pool, Manager
+from queue import Queue
+def bfs_parallel(edges, start_node, visited_nodes, bfs_time):
+ graph = {}
+ for edge in edges:
+ if edge[0] not in graph:
+ graph[edge[0]] = []
+ if edge[1] not in graph:
+ graph[edge[1]] = []
+ graph[edge[0]].append(edge[1])
+ graph[edge[1]].append(edge[0])
+
+ visited = set()
+ visited.add(start_node)
+ queue = Queue()
+ queue.put(start_node)
+
+ start_time = time.time()
+ while not queue.empty():
+ node = queue.get()
+ visited_nodes.append(node)
+ if node in graph:
+ for neighbor in graph[node]:
+ if neighbor not in visited:
+ visited.add(neighbor)
+queue.put(neighbor)
+ bfs_time.append(time.time() - start_time)
+def dfs_parallel(edges, start_node, visited_nodes, dfs_time):
+ graph = {}
+ for edge in edges:
+ if edge[0] not in graph:
+ graph[edge[0]] = []
+ if edge[1] not in graph:
+ graph[edge[1]] = []
+ graph[edge[0]].append(edge[1])
+ graph[edge[1]].append(edge[0])
+
+ visited = set()
+ visited.add(start_node)
+ stack = [start_node]
+
+ start_time = time.time()
+ while stack:
+ node = stack.pop()
+ visited_nodes.append(node)
+ if node in graph:
+ for neighbor in graph[node]:
+ if neighbor not in visited:
+ visited.add(neighbor)
+stack.append(neighbor)
+ dfs_time.append(time.time() - start_time)
+if __name__ == "__main__":
+ edges = [(0, 1), (0, 2), (1, 3), (1, 6), (2, 4), (2, 5)]
+ start_node = 0
+
+ manager = Manager()
+ visited_nodes_bfs = manager.list()
+ visited_nodes_dfs = manager.list()
+ bfs_time = manager.list()
+ dfs_time = manager.list()
+
+ with Pool(processes=2) as pool:
+ pool.apply(bfs_parallel, (edges, start_node, visited_nodes_bfs, bfs_time))
+ pool.apply(dfs_parallel, (edges, start_node, visited_nodes_dfs, dfs_time))
+
+ print("Visited nodes (BFS):", visited_nodes_bfs)
+ print("Visited nodes (DFS):", visited_nodes_dfs)
+ print("BFS Time:", bfs_time[0], "seconds")
+ print("DFS Time:", dfs_time[0], "seconds")
