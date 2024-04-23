@@ -1,0 +1,27 @@
+import numpy as np
+from multiprocessing import Pool
+def min_reduction(arr):
+ min_value = np.inf
+ for val in arr:
+ if val < min_value:
+ min_value = val
+ print("Minimum value:", min_value)
+def max_reduction(arr):
+ max_value = -np.inf
+ for val in arr:
+ if val > max_value:
+ max_value = val
+ print("Maximum value:", max_value)
+def sum_reduction(arr):
+ sum_value = sum(arr)
+ print("Sum:", sum_value)
+def average_reduction(arr):
+ average_value = sum(arr) / len(arr)
+ print("Average:", average_value)
+if __name__ == "__main__":
+ arr = [5, 2, 9, 1, 7, 6, 8, 3, 4]
+ with Pool() as pool:
+ pool.map(min_reduction, [arr])
+ pool.map(max_reduction, [arr])
+ pool.map(sum_reduction, [arr])
+ pool.map(average_reduction, [arr])
