@@ -1,0 +1,53 @@
+import numpy as np
+import time
+from numba import jit, prange
+# Function to perform Parallel Bubble Sort
+@jit(nopython=True, parallel=True)
+def parallel_bubble_sort(arr):
+ n = len(arr)
+ for i in range(n):
+ for j in range(0, n-i-1):
+ if arr[j] > arr[j+1]:
+ arr[j], arr[j+1] = arr[j+1], arr[j]
+# Function to perform Parallel Merge Sort
+@jit(nopython=True)
+def parallel_merge_sort(arr):
+ if len(arr) > 1:
+ mid = len(arr) // 2
+ left_half = arr[:mid].copy() # Make a copy to avoid overwriting the original array
+ right_half = arr[mid:].copy() # Make a copy to avoid overwriting the original array
+ parallel_merge_sort(left_half)
+ parallel_merge_sort(right_half)
+ i = j = k = 0
+ # Merge the two halves
+ while i < len(left_half) and j < len(right_half):
+ if left_half[i] < right_half[j]:
+ arr[k] = left_half[i]
+ i += 1
+ else:
+ arr[k] = right_half[j]
+ j += 1
+ k += 1
+ while i < len(left_half):
+ arr[k] = left_half[i]
+ i += 1
+ k += 1
+ while j < len(right_half):
+ arr[k] = right_half[j]
+ j += 1
+ k += 1
+# Test the implementations
+arr = np.array([7, 2, 9, 4, 5, 1, 6], dtype=np.int32)
+print("Original array:", arr)
+start_time = time.time()
+parallel_bubble_sort(arr.copy())
+end_time = time.time()
+print("Sorted array using Parallel Bubble Sort:", arr)
+print("Time taken for Parallel Bubble Sort:", end_time - start_time, "seconds")
+arr = np.array([7, 2, 9, 4, 5, 1, 6], dtype=np.int32) # Reassign array for Merge Sort
+print("\nOriginal array:", arr)
+start_time = time.time()
+parallel_merge_sort(arr)
+end_time = time.time()
+print("Sorted array using Parallel Merge Sort:", arr)
+print("Time taken for Parallel Merge Sort:", end_time - start_time, "seconds")
