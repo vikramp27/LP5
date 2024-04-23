@@ -1,0 +1,79 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import Dense, SimpleRNN, Dropout
+
+# Constants
+TRAIN_FILE_PATH = "C:\\Users\\rushi\\Downloads\\Google_Stock_Price_Train.csv"
+TEST_FILE_PATH = "C:\\Users\\rushi\\Downloads\\Google_Stock_Price_Test.csv"
+WINDOW_SIZE = 60
+NUM_UNITS = 50
+DROPOUT_RATE = 0.2
+BATCH_SIZE = 30
+EPOCHS = 100
+VALIDATION_SPLIT = 0.05
+
+# Data Loading
+train_df = pd.read_csv(TRAIN_FILE_PATH)
+test_df = pd.read_csv(TEST_FILE_PATH)
+
+# Data Preprocessing
+scaler = MinMaxScaler()
+train_scaled = scaler.fit_transform(train_df[['Open']].values)
+test_input = scaler.transform(
+    np.concatenate((train_df['Open'], test_df['Open']), axis=0)[-len(test_df)-WINDOW_SIZE:].reshape(-1, 1)
+)
+
+# Training Data Preparation
+def prepare_data_for_training(data, window_size):
+    x, y = [], []
+    for i in range(window_size, data.shape[0]):
+        x.append(data[i-window_size:i, 0])
+        y.append(data[i, 0])
+    return np.array(x), np.array(y)
+
+x_train, y_train = prepare_data_for_training(train_scaled, WINDOW_SIZE)
+x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+
+# Model Setup
+model = Sequential([
+    SimpleRNN(units=NUM_UNITS, activation="tanh", return_sequences=True, input_shape=(x_train.shape[1], 1)),
+    Dropout(DROPOUT_RATE),
+    SimpleRNN(units=NUM_UNITS, activation="tanh", return_sequences=True),
+    Dropout(DROPOUT_RATE),
+    SimpleRNN(units=NUM_UNITS, activation="tanh", return_sequences=True),
+    Dropout(DROPOUT_RATE),
+    SimpleRNN(units=NUM_UNITS),
+    Dropout(DROPOUT_RATE),
+    Dense(units=1)
+])
+model.compile(optimizer='adam', loss='mse')
+
+# Model Training
+history = model.fit(x_train, y_train, epochs=EPOCHS, batch_size=BATCH_SIZE, validation_split=VALIDATION_SPLIT)
+
+# Test Data Preparation
+x_test = []
+for i in range(WINDOW_SIZE, test_input.shape[0]):
+    x_test.append(test_input[i-WINDOW_SIZE:i, 0])
+x_test = np.array(x_test)
+x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
+
+# Prediction
+y_pred = model.predict(x_test)
+y_pred = scaler.inverse_transform(y_pred)
+
+# Evaluation
+y_test = test_df['Open'].values
+loss = model.evaluate(x=x_test, y=y_test)
+
+# Plotting
+plt.plot(y_test, color='red', label='Real price')
+plt.plot(y_pred, color='blue', label='Predicted price')
+plt.title('Google Stock Price Prediction')
+plt.xlabel('Time')
+plt.ylabel('Price')
+plt.legend()
+plt.show()
